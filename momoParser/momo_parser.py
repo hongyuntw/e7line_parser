@@ -38,9 +38,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
 
-
-# In[2]:
-
+error_product_url = []
 
 def save_obj(obj,path):
     if not os.path.exists(os.path.dirname(path)):
@@ -57,7 +55,6 @@ def load_obj(path):
         return pickle.load(f)
 
 
-# In[14]:
 
 
 def parseMomoProduct(urls,supplier_codes,supplier_names,product_infos):
@@ -71,14 +68,21 @@ def parseMomoProduct(urls,supplier_codes,supplier_names,product_infos):
     product_info_dict = {}
     for i in range(len(urls)):
         url = urls[i]
+        print(url)
         supplier_code =  supplier_codes[i]
         supplier_name = supplier_names[i]
         product_info = product_infos[i]
         product_key = url[url.rfind('=')+1:]
         res = requests.get(url,headers=headers,allow_redirects=False)
         soup  = BeautifulSoup(res.text)
-        product_div = soup.find('div',attrs={"class":"prdnoteArea"})
-        product_name = product_div.find('h1').text
+        product_div = soup.find('div', attrs={"class": "prdnoteArea"})
+        if product_div is None:
+            error_product_url.append(url)
+            continue
+        try:
+            product_name = product_div.find('h1').text
+        except:
+            product_name = product_div.find('h3').text
         
 #         dict info
         product_name_dict[product_key] = product_name
@@ -147,8 +151,6 @@ def parseMomoProduct(urls,supplier_codes,supplier_names,product_infos):
     return product_dict, product_supplier_name_dict , product_info_dict , product_name_dict
 
 
-# In[21]:
-
 
 def processMomoData(data):
     base_url  = data['url']
@@ -181,8 +183,6 @@ def processMomoData(data):
     return product_dict, product_supplier_name_dict , product_info_dict , product_name_dict
     
 
-
-# In[22]:
 
 
 def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , product_name_dict):
@@ -338,11 +338,9 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
                         spec_remove_flag = True
                         raise
                         
-                        
-                
             except:
                 product_id = product_key
-                store_name = product_supplier_name_dict[product_key]
+                store_name = old_product_supplier_name_dict[product_key]
                 sheet_name = store_name
                 product_name = old_product_name_dict[product_key]
                 product_remove += 1
@@ -457,11 +455,11 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
     text += ' ,品項移除數量:' + str(spec_remove)
     text += '\n總共有' + str(product_add) + '個商品的品項有新增，共比昨天多了'+ str(spec_add) + '個品項'
     text += '\n綠色代表新增，灰色代表移除，紅色代表變更！'
+    for url in error_product_url:
+        text += '\n' + url + ' 商品不存在'
     
     return  fileNames , text
 
-
-# In[29]:
 
 
 def send_mail(send_from, send_to, subject, text, files=None,server="127.0.0.1"):
@@ -487,16 +485,17 @@ def send_mail(send_from, send_to, subject, text, files=None,server="127.0.0.1"):
     smtp.sendmail(send_from, send_to, msg.as_string())
     smtp.close()
 
-    #smtp = smtplib.SMTP('smtp.gmail.com',587)
-    #smtp.connect("smtp.gmail.com",587)
-    #smtp.ehlo()
-    #smtp.starttls()
-    #smtp.login('e7lineMail@gmail.com','e7linee7line')
-    #smtp.sendmail(send_from, send_to, msg.as_string())
-    #smtp.close()
 
 
-# In[30]:
+
+
+
+subject = 'Momo商品爬蟲'
+send_to = ['ruby.lin@e7line.com',
+            'xing.chen@gigabyte.com',
+            'chaoyang.huang@gigabyte.com',
+          'harrychiang0@gmail.com']
+# send_to = ['harrychiang0@gmail.com']
 
 
 test_api = 'https://www.e7line.com:8080/spiderdata3.aspx'
@@ -505,24 +504,19 @@ with urllib.request.urlopen(api) as url:
     datas = json.loads(url.read().decode())
     
 try:
-    momo_data  = datas[1]
+    momo_data = datas[0]
 except:
+    text = '今天momo商品沒有資訊！'
+    send_mail('e7line@gigabyte.com', send_to , subject, text , files=None,server="127.0.0.1")
     print('cant get momo data')
     raise SystemExit("stop program")
 
 product_dict, product_supplier_name_dict , product_info_dict , product_name_dict = processMomoData(momo_data)
 fileNames , text = dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , product_name_dict)
-subject = 'Momo商品爬蟲'
-send_to = ['ruby.lin@e7line.com',
-            'xing.chen@gigabyte.com',
-            'chaoyang.huang@gigabyte.com',
-          'harrychiang0@gmail.com']
+
     
-# send_to = ['harrychiang0@gmail.com']
 send_mail('e7line@gigabyte.com', send_to , subject, text , files=fileNames,server="127.0.0.1")
 
-
-# In[ ]:
 
 
 

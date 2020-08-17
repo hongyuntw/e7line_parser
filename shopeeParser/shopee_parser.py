@@ -473,7 +473,6 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
     return  fileNames , text
 
 
-# In[150]:
 
 
 def processShopeeData(data):
@@ -504,8 +503,6 @@ def processShopeeData(data):
     return product_dict, product_supplier_name_dict , product_info_dict , product_name_dict
     
 
-
-# In[151]:
 
 
 def send_mail(send_from, send_to, subject, text, files=None,server="127.0.0.1"):
@@ -557,7 +554,7 @@ send_to = ['ruby.lin@e7line.com',
 
     
 try:
-    shopee_data  = datas[1]
+    shopee_data  = datas[2]
 except:
     text = '今天shopee商品沒有資訊！'
     send_mail('e7line@gigabyte.com', send_to , subject, text , files=None,server="127.0.0.1")
@@ -578,46 +575,3 @@ send_mail('e7line@gigabyte.com', send_to , subject, text , files=fileNames,serve
 
 
     
-
-
-# In[122]:
-
-
-# del product_dict['13942352-2098334301']['檸檬(黃)']
-
-
-# In[123]:
-
-
-# del product_dict['12660760-1006856607']
-
-
-# In[124]:
-
-
-# product_dict['1369252-127851358']['小方盒一層(含蓋子) 現貨']['discount_price'] = 40
-
-
-# In[125]:
-
-
-# tmpdict = {'spec-1':{'original_price':'23','discount_price':'32','quantity':'666'},
-#           'spec-2':{'original_price':'23','discount_price':'32','quantity':'666'},
-#           'spec-3':{'original_price':'23','discount_price':'32','quantity':'666'},
-#           'spec-4':{'original_price':'23','discount_price':'32','quantity':'666'}}
-
-
-# In[126]:
-
-
-# product_dict['12660760-87654321'] = tmpdict
-# product_supplier_name_dict['12660760-87654321'] = '凱傑'
-# product_name_dict['12660760-87654321'] = '亂賣'
-# product_info_dict['12660760-87654321'] = 'l1231231'
-
-
-# In[ ]:
-
-
-
-

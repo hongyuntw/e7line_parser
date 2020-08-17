@@ -599,7 +599,7 @@ with urllib.request.urlopen(api) as url:
     datas = json.loads(url.read().decode())
     
 try:
-    yahoo_data  = datas[0]
+    yahoo_data  = datas[1]
 except:
     text = '今天yahoo商品沒有資訊！'
     send_mail('e7line@gigabyte.com', send_to , subject, text , files=None,server="127.0.0.1")
