@@ -175,8 +175,13 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
                     spec_ids.append(spec_id)
                 spec_ids_arr.append(spec_ids)
             op = webdriver.ChromeOptions()
-            op.add_argument('headless')
-            driver = webdriver.Chrome(options=op)
+            # op.add_argument('headless')
+            op.add_argument('--headless')
+            op.add_argument('--no-sandbox')
+            op.add_argument('--disable-dev-shm-usage')
+            # driver = webdriver.Chrome(options=op)
+            driver = webdriver.Chrome(chrome_options=op)
+
             driver.get(url)
             try:
                 wait = ui.WebDriverWait(driver,5)

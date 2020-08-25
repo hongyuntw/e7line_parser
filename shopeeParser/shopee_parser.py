@@ -100,8 +100,13 @@ def parseShopeeProduct(urls,supplier_codes,supplier_names,product_infos):
         product_key = ""
         print(url)
         op = webdriver.ChromeOptions()
-        op.add_argument('headless')
-        driver = webdriver.Chrome(options=op)
+         # op.add_argument('headless')
+        op.add_argument('--headless')
+        op.add_argument('--no-sandbox')
+        op.add_argument('--disable-dev-shm-usage')
+        # driver = webdriver.Chrome(options=op)
+        driver = webdriver.Chrome(chrome_options=op)
+        
         driver.get(url)
         try:
             wait = ui.WebDriverWait(driver,5)
