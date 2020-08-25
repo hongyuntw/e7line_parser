@@ -191,7 +191,6 @@ def parseShopeeProduct(urls,supplier_codes,supplier_names,product_infos):
 #             driver.close()
         except:
             continue
-
     driver.quit()
     return product_dict, product_supplier_name_dict , product_info_dict , product_name_dict
 
