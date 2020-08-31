@@ -57,9 +57,6 @@ def load_obj(path):
         return pickle.load(f)
 
 
-# In[9]:
-
-
 
 
 
@@ -67,6 +64,10 @@ def load_obj(path):
 
 
 def getAllProducts(store_url):
+    ua = UserAgent()
+    headers = {
+        'User-Agent': 'Googlebot',
+    }
     product_urls = []
     for i in range(1,100):
         base_page_url = '?apg='
@@ -114,12 +115,6 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
         product_supplier_name_dict[product_key] = supplier_name
         product_info_dict[product_key] = product_info
         
-
-#         try:
-#             product_id = soup.find('input',attrs={'type':'hidden','name':'listingId'}).attrs.get('value')
-#             product_id_dict[product_name] = str(product_id)
-#         except:
-#             product_id_dict[product_name] = '商品編號錯誤'
         
         
         original_price = ''
@@ -179,8 +174,8 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
             op.add_argument('--headless')
             op.add_argument('--no-sandbox')
             op.add_argument('--disable-dev-shm-usage')
-            # driver = webdriver.Chrome(options=op)
-            driver = webdriver.Chrome(chrome_options=op)
+            driver = webdriver.Chrome(options=op)
+            # driver = webdriver.Chrome(chrome_options=op)
 
             driver.get(url)
             try:
@@ -199,9 +194,16 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
                     html = driver.page_source
                     soup = BeautifulSoup(html,'lxml')
                     try:
-                        spec_name = soup.find('label',attrs={'for':spec_id}).text
+                        spec_node = soup.find('label',attrs={'for':spec_id})
                     except:
                         spec_name = 'None'
+
+                    try:
+                        # 圖片spec
+                        spec_name = spec_node.find('img', alt=True)['alt']
+                    except:
+                        # 普通spec
+                        spec_name = spec_node.text
 
                     tmp_dict["discount_price"] = discount_price
                     tmp_dict["original_price"] = original_price
@@ -604,7 +606,17 @@ with urllib.request.urlopen(api) as url:
     datas = json.loads(url.read().decode())
     
 try:
-    yahoo_data  = datas[1]
+    yahoo_data = datas[1]
+    # print(yahoo_data)
+    # yahoo_data = {
+    #     'url': 'https://tw.bid.yahoo.com/item/productCode' ,
+    #     'productData': [{
+    #         'SupplierName': '麥卡樂',
+    #         'SupplierCode': '',
+    #         'ProductCode': '100482766988',
+    #         'ProductInfo': ['P1907170028---鐵藝隔板置物架(小號) A051---已停用'],
+    #     }],
+    # }
 except:
     text = '今天yahoo商品沒有資訊！'
     send_mail('e7line@gigabyte.com', send_to , subject, text , files=None,server="127.0.0.1")
