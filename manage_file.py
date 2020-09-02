@@ -15,14 +15,14 @@ for store_name in ['momo', 'shopee','yahoo']:
                 continue
             folder_path = base_path + '/' + dir
             shutil.rmtree(folder_path)
-    log_path  = './' + store_name + '_log.txt'
-    if os.path.exists(log_path):
-        os.remove(log_path)
-    else:
-        print(store_name + " log does not exist")
+    # log_path  = './' + store_name + '_log.txt'
+    # if os.path.exists(log_path):
+    #     os.remove(log_path)
+    # else:
+    #     print(store_name + " log does not exist")
 
-    file = open(log_path, "w") 
-    file.close() 
+    # file = open(log_path, "w") 
+    # file.close() 
 
 
 
