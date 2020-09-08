@@ -97,112 +97,55 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
     product_supplier_name_dict = {}
     product_info_dict = {}
     for i in range(len(urls)):
-        url = urls[i]
-        print(url)
-        supplier_code =  supplier_codes[i]
-        supplier_name = supplier_names[i]
-        product_info = product_infos[i]
-        product_key = url[url.rfind('/')+1:]
-        
-        res = requests.get(url,headers=headers,allow_redirects=False)
-        soup  = BeautifulSoup(res.text,'lxml')
-        try:
-            product_div = soup.find('section',attrs={"class":"wrap__3MZRM"})
-            product_name = product_div.find('h1',attrs={'class':'title__3wBva'}).text
-        except:
-            product_name = '商品名稱錯誤'
-#         print(product_name)
-        product_name_dict[product_key] = product_name
-        product_supplier_name_dict[product_key] = supplier_name
-        product_info_dict[product_key] = product_info
-        
-        
-        
-        original_price = ''
-        discount_price = ''
-        try:
-            original_price_node = product_div.find('span',attrs={'class':'originPrice__271Nh'})
-            original_price = int(re.findall('\d+', original_price_node.text.replace(',','') )[0])
-        except:
-            pass
-        
-        try:
-            discount_price_node = product_div.find('em',attrs={'class':'price__2f7Jw'})
-            discount_price = int(re.findall('\d+', discount_price_node.text.replace(',','') )[0])
-        except:
-            pass
-
-        try:
-            spec_ul_node = product_div.find('ul',attrs={'class':'specList__3TA_I'})
-            spec_divs = spec_ul_node.find_all('li',attrs={'class':None})
-            spec_div_count = len(spec_divs)
-        except:
-            continue
-
-        # 沒有型別的
-        if(spec_div_count == 0):
-            spec_dict = {}
-            tmp_dict = {}
-            spec_name = 'None'
-            tmp_dict["discount_price"] = discount_price
-            tmp_dict["original_price"] = original_price
+        while True:
             try:
-                quantity_node = soup.find("input", attrs={'type':'number','class':'qtyInput__1dbgq'})
-                tmp_dict["quantity"] = int(quantity_node.get('max').replace(',',''))
-                if(tmp_dict['quantity']>5000):
-                    tmp_dict['quantity'] = '5000+'
-            except:
-                tmp_dict["quantity"] = ''
-            spec_dict[spec_name] = tmp_dict
+                url = urls[i]
+                print(url)
+                supplier_code =  supplier_codes[i]
+                supplier_name = supplier_names[i]
+                product_info = product_infos[i]
+                product_key = url[url.rfind('/')+1:]
                 
-            product_dict[product_key] = spec_dict
-        else:
-        #     型別超過一種
-            spec_ids_arr = []
-            for spec_div in spec_divs:
-                lis = spec_div.find('div',attrs={'class':'content__3X3yq'}).find('ul').find_all('li')
-                spec_ids = []
-                for li in lis:
-                    spec_id = li.find('input').attrs.get('id')
-                    spec_ids.append(spec_id)
-                spec_ids_arr.append(spec_ids)
-            op = webdriver.ChromeOptions()
-            # op.add_argument('headless')
-            op.add_argument('--headless')
-            op.add_argument('--no-sandbox')
-            op.add_argument('----disable-gpu')
-            op.add_argument('--disable-dev-shm-usage')
-            driver = webdriver.Chrome(options=op)
-            # driver = webdriver.Chrome(chrome_options=op)
+                res = requests.get(url,headers=headers,allow_redirects=False)
+                soup  = BeautifulSoup(res.text,'lxml')
+                try:
+                    product_div = soup.find('section',attrs={"class":"wrap__3MZRM"})
+                    product_name = product_div.find('h1',attrs={'class':'title__3wBva'}).text
+                except:
+                    product_name = '商品名稱錯誤'
+                # print(product_name)
+                product_name_dict[product_key] = product_name
+                product_supplier_name_dict[product_key] = supplier_name
+                product_info_dict[product_key] = product_info
+                
+                
+                
+                original_price = ''
+                discount_price = ''
+                try:
+                    original_price_node = product_div.find('span',attrs={'class':'originPrice__271Nh'})
+                    original_price = int(re.findall('\d+', original_price_node.text.replace(',','') )[0])
+                except:
+                    pass
+                
+                try:
+                    discount_price_node = product_div.find('em',attrs={'class':'price__2f7Jw'})
+                    discount_price = int(re.findall('\d+', discount_price_node.text.replace(',','') )[0])
+                except:
+                    pass
 
-            driver.get(url)
-            try:
-                wait = ui.WebDriverWait(driver,5)
-                wait.until(lambda driver: driver.find_element_by_class_name("specCheckbox__LtDOH"))
-            except:
-                continue
-            spec_arr = []
-            spec_dict = {}
-            for spec_id in spec_ids_arr[0]:
-                tmp_dict = {}
-                element = driver.find_element_by_id(spec_id)
-#                 print(spec_id)
-                if(element.get_attribute('disabled') is None ):
-                    driver.execute_script("arguments[0].click();", element)
-                    html = driver.page_source
-                    soup = BeautifulSoup(html,'lxml')
-                    try:
-                        spec_node = soup.find('label',attrs={'for':spec_id})
-                    except:
-                        spec_name = 'None'
+                try:
+                    spec_ul_node = product_div.find('ul',attrs={'class':'specList__3TA_I'})
+                    spec_divs = spec_ul_node.find_all('li',attrs={'class':None})
+                    spec_div_count = len(spec_divs)
+                except:
+                    continue
 
-                    try:
-                        # 圖片spec
-                        spec_name = spec_node.find('img', alt=True)['alt']
-                    except:
-                        # 普通spec
-                        spec_name = spec_node.text
-
+                # 沒有型別的
+                if(spec_div_count == 0):
+                    spec_dict = {}
+                    tmp_dict = {}
+                    spec_name = 'None'
                     tmp_dict["discount_price"] = discount_price
                     tmp_dict["original_price"] = original_price
                     try:
@@ -212,26 +155,85 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
                             tmp_dict['quantity'] = '5000+'
                     except:
                         tmp_dict["quantity"] = ''
-#                     print(tmp_dict)
                     spec_dict[spec_name] = tmp_dict
+                        
+                    product_dict[product_key] = spec_dict
                 else:
-                    try:
-                        spec_name = soup.find('label',attrs={'for':spec_id}).text
-                    except:
-                        spec_name = 'None' 
-                    tmp_dict["discount_price"] = ''
-                    tmp_dict["original_price"] = ''
-                    tmp_dict['quantity']= ''
-                    spec_dict[spec_name] = tmp_dict
+                #     型別超過一種
+                    spec_ids_arr = []
+                    for spec_div in spec_divs:
+                        lis = spec_div.find('div',attrs={'class':'content__3X3yq'}).find('ul').find_all('li')
+                        spec_ids = []
+                        for li in lis:
+                            spec_id = li.find('input').attrs.get('id')
+                            spec_ids.append(spec_id)
+                        spec_ids_arr.append(spec_ids)
+                    op = webdriver.ChromeOptions()
+                    # op.add_argument('headless')
+                    op.add_argument('--headless')
+                    op.add_argument('--no-sandbox')
+                    op.add_argument('----disable-gpu')
+                    op.add_argument('--disable-dev-shm-usage')
+                    driver = webdriver.Chrome(options=op)
+                    # driver = webdriver.Chrome(chrome_options=op)
 
+                    driver.get(url)
+                    try:
+                        wait = ui.WebDriverWait(driver,5)
+                        wait.until(lambda driver: driver.find_element_by_class_name("specCheckbox__LtDOH"))
+                    except:
+                        break
+                    spec_arr = []
+                    spec_dict = {}
+                    for spec_id in spec_ids_arr[0]:
+                        tmp_dict = {}
+                        element = driver.find_element_by_id(spec_id)
+                        # print(spec_id)
+                        if(element.get_attribute('disabled') is None ):
+                            driver.execute_script("arguments[0].click();", element)
+                            html = driver.page_source
+                            soup = BeautifulSoup(html,'lxml')
+                            try:
+                                spec_node = soup.find('label',attrs={'for':spec_id})
+                            except:
+                                spec_name = 'None'
+
+                            try:
+                                # 圖片spec
+                                spec_name = spec_node.find('img', alt=True)['alt']
+                            except:
+                                # 普通spec
+                                spec_name = spec_node.text
+
+                            tmp_dict["discount_price"] = discount_price
+                            tmp_dict["original_price"] = original_price
+                            try:
+                                quantity_node = soup.find("input", attrs={'type':'number','class':'qtyInput__1dbgq'})
+                                tmp_dict["quantity"] = int(quantity_node.get('max').replace(',',''))
+                                if(tmp_dict['quantity']>5000):
+                                    tmp_dict['quantity'] = '5000+'
+                            except:
+                                tmp_dict["quantity"] = ''
+                            #print(tmp_dict)
+                            spec_dict[spec_name] = tmp_dict
+                        else:
+                            try:
+                                spec_name = soup.find('label',attrs={'for':spec_id}).text
+                            except:
+                                spec_name = 'None' 
+                            tmp_dict["discount_price"] = ''
+                            tmp_dict["original_price"] = ''
+                            tmp_dict['quantity']= ''
+                            spec_dict[spec_name] = tmp_dict
+
+                            
+                    product_dict[product_key] = spec_dict
                     
-            product_dict[product_key] = spec_dict
-            
-        try:
-            driver.close()
-            driver.quit() 
-        except:
-            pass
+                break
+            except Exception as e:
+                print(e)
+
+    driver.quit()
     return product_dict, product_supplier_name_dict , product_info_dict , product_name_dict
 
 
@@ -497,8 +499,6 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
                         col = 3
                 else:
 
-
-                
                     for spec_name , spec in specs.items():
                         sheet.cell(row = row,column = col).value = spec_name
                         col += 1

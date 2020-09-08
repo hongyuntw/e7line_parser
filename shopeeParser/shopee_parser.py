@@ -84,7 +84,6 @@ def getAllProducts(store_url):
              
 
 
-# In[148]:
 
 
 def parseShopeeProduct(urls,supplier_codes,supplier_names,product_infos):
@@ -93,50 +92,80 @@ def parseShopeeProduct(urls,supplier_codes,supplier_names,product_infos):
     product_supplier_name_dict = {}
     product_info_dict = {}
     for i in range(len(urls)):
-        url = urls[i]
-        supplier_code =  supplier_codes[i]
-        supplier_name = supplier_names[i]
-        product_info = product_infos[i]
-        product_key = ""
-        print(url)
-        op = webdriver.ChromeOptions()
-         # op.add_argument('headless')
-        op.add_argument('--headless')
-        op.add_argument('--no-sandbox')
-        op.add_argument('----disable-gpu')
-        op.add_argument('--disable-dev-shm-usage')
-        driver = webdriver.Chrome(options=op)
-        # driver = webdriver.Chrome(chrome_options=op)
-        
-        driver.get(url)
-        try:
-            wait = ui.WebDriverWait(driver,5)
-            wait.until(lambda driver: driver.find_element_by_class_name("qaNIZv"))
-        except:
-            continue
-        try:
-            product_name = driver.find_element_by_class_name("qaNIZv").text
-            product_id = url[url.rfind('.')+1:]
-            
-            product_key = str(supplier_code) + '-' + str(product_id)
-#             print(product_key)
-            
-            product_name_dict[product_key] = product_name
-            
-            
-            product_supplier_name_dict[product_key] = supplier_name
-            product_info_dict[product_key] = product_info
-            
-            
-            spec_buttons = driver.find_elements_by_class_name("product-variation")
-            spec_dict = {}
-            if(len(spec_buttons) != 0 ):
-                for button in spec_buttons:
-                    btn_classname = button.get_attribute("class")
-                    tmp_dict = {}
-#                     tmp_dict["spec_name"] = button.text
-                    if("disabled" not in btn_classname):
-                        button.click()
+        while True:
+            try:
+                url = urls[i]
+                supplier_code =  supplier_codes[i]
+                supplier_name = supplier_names[i]
+                product_info = product_infos[i]
+                product_key = ""
+                print(url)
+                op = webdriver.ChromeOptions()
+                # op.add_argument('headless')
+                op.add_argument('--headless')
+                op.add_argument('--no-sandbox')
+                op.add_argument('----disable-gpu')
+                op.add_argument('--disable-dev-shm-usage')
+                driver = webdriver.Chrome(options=op)
+                # driver = webdriver.Chrome(chrome_options=op)
+                
+                driver.get(url)
+                try:
+                    wait = ui.WebDriverWait(driver,5)
+                    wait.until(lambda driver: driver.find_element_by_class_name("qaNIZv"))
+                except:
+                    break
+                try:
+                    product_name = driver.find_element_by_class_name("qaNIZv").text
+                    product_id = url[url.rfind('.')+1:]
+                    
+                    product_key = str(supplier_code) + '-' + str(product_id)
+                    #print(product_key)
+                    
+                    product_name_dict[product_key] = product_name
+                    
+                    
+                    product_supplier_name_dict[product_key] = supplier_name
+                    product_info_dict[product_key] = product_info
+                    
+                    
+                    spec_buttons = driver.find_elements_by_class_name("product-variation")
+                    spec_dict = {}
+                    if(len(spec_buttons) != 0 ):
+                        for button in spec_buttons:
+                            btn_classname = button.get_attribute("class")
+                            tmp_dict = {}
+                            # tmp_dict["spec_name"] = button.text
+                            if("disabled" not in btn_classname):
+                                button.click()
+                                try:
+                                    tmp_dict["original_price"] = driver.find_element_by_class_name("_3_ISdg").text
+                                    tmp_dict["original_price"] = int(re.findall('\d+', tmp_dict["original_price"].replace(',','') )[0])
+                                except:
+                                    tmp_dict["original_price"] = ""
+
+                                try:
+                                    tmp_dict["discount_price"] = driver.find_element_by_class_name("_3n5NQx").text
+                                    tmp_dict["discount_price"] = int(re.findall('\d+', tmp_dict["discount_price"].replace(',','') )[0])
+                                except:
+                                    tmp_dict["discount_price"] = ""
+
+                                try:
+                                    q_str = (driver.find_element_by_class_name("_1FzU2Y").text)
+                                    tmp_dict["quantity"] = int(re.findall('\d+', q_str.replace(',','') )[0])
+                                except:
+                                    tmp_dict["quantity"] = ""
+                                #sleep(1)
+                            else:
+                                tmp_dict["original_price"] = ""
+                                tmp_dict["discount_price"] = ""
+                                tmp_dict["quantity"] = ""  
+                            spec_dict[button.text] = tmp_dict
+                        product_dict[product_key] = spec_dict
+                    else :
+                        tmp_dict = {}
+                        spec_name = "None"
+                        # tmp_dict["spec_name"] = ""
                         try:
                             tmp_dict["original_price"] = driver.find_element_by_class_name("_3_ISdg").text
                             tmp_dict["original_price"] = int(re.findall('\d+', tmp_dict["original_price"].replace(',','') )[0])
@@ -146,6 +175,7 @@ def parseShopeeProduct(urls,supplier_codes,supplier_names,product_infos):
                         try:
                             tmp_dict["discount_price"] = driver.find_element_by_class_name("_3n5NQx").text
                             tmp_dict["discount_price"] = int(re.findall('\d+', tmp_dict["discount_price"].replace(',','') )[0])
+
                         except:
                             tmp_dict["discount_price"] = ""
 
@@ -154,51 +184,20 @@ def parseShopeeProduct(urls,supplier_codes,supplier_names,product_infos):
                             tmp_dict["quantity"] = int(re.findall('\d+', q_str.replace(',','') )[0])
                         except:
                             tmp_dict["quantity"] = ""
-#                         sleep(1)
-                    else:
-                        tmp_dict["original_price"] = ""
-                        tmp_dict["discount_price"] = ""
-                        tmp_dict["quantity"] = ""  
-                    spec_dict[button.text] = tmp_dict
-                product_dict[product_key] = spec_dict
-            else :
-                tmp_dict = {}
-                spec_name = "None"
-#                 tmp_dict["spec_name"] = ""
-                try:
-                    tmp_dict["original_price"] = driver.find_element_by_class_name("_3_ISdg").text
-                    tmp_dict["original_price"] = int(re.findall('\d+', tmp_dict["original_price"].replace(',','') )[0])
-                except:
-                    tmp_dict["original_price"] = ""
-
-                try:
-                    tmp_dict["discount_price"] = driver.find_element_by_class_name("_3n5NQx").text
-                    tmp_dict["discount_price"] = int(re.findall('\d+', tmp_dict["discount_price"].replace(',','') )[0])
+                        spec_dict[spec_name] = tmp_dict
+                        
+                    product_dict[product_key] = spec_dict
 
                 except:
-                    tmp_dict["discount_price"] = ""
-
-                try:
-                    q_str = (driver.find_element_by_class_name("_1FzU2Y").text)
-                    tmp_dict["quantity"] = int(re.findall('\d+', q_str.replace(',','') )[0])
-                except:
-                    tmp_dict["quantity"] = ""
-                spec_dict[spec_name] = tmp_dict
-                
-            product_dict[product_key] = spec_dict
-
-
-                
-#             driver.close()
-        except:
-            continue
+                    break
+                break
+            except Exception as e:
+                print(e)
     driver.quit()
     return product_dict, product_supplier_name_dict , product_info_dict , product_name_dict
 
     
 
-
-# In[149]:
 
 
 def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , product_name_dict):
