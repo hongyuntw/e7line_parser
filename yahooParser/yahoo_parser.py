@@ -139,7 +139,7 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
                     spec_divs = spec_ul_node.find_all('li',attrs={'class':None})
                     spec_div_count = len(spec_divs)
                 except:
-                    continue
+                    break
 
                 # 沒有型別的
                 if(spec_div_count == 0):
