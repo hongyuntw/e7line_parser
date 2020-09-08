@@ -432,6 +432,8 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
     for s_name, rows in be_copy_cell_rows.items():
         sheet_changed = workbook_changed.get_sheet_by_name(s_name)
         sheet = workbook.get_sheet_by_name(s_name)
+        rows = list(set(rows))
+        rows = sorted(rows)
         i = 1
         for row in rows:
             for col in range(1,8):
