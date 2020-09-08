@@ -37,6 +37,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
+from collections import OrderedDict
 
 
 # In[8]:
@@ -137,10 +138,6 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
             spec_div_count = len(spec_divs)
         except:
             continue
-            
-#         print(discount_price)
-#         print(original_price)
-
 
         # 沒有型別的
         if(spec_div_count == 0):
@@ -173,6 +170,7 @@ def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
             # op.add_argument('headless')
             op.add_argument('--headless')
             op.add_argument('--no-sandbox')
+            op.add_argument('----disable-gpu')
             op.add_argument('--disable-dev-shm-usage')
             driver = webdriver.Chrome(options=op)
             # driver = webdriver.Chrome(chrome_options=op)
@@ -535,7 +533,7 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
     for s_name, rows in be_copy_cell_rows.items():
         sheet_changed = workbook_changed.get_sheet_by_name(s_name)
         sheet = workbook.get_sheet_by_name(s_name)
-        rows = list(set(rows))
+        rows = list(OrderedDict.fromkeys(rows))
         i = 1
         for row in rows:
             for col in range(1,8):

@@ -103,6 +103,7 @@ def parseShopeeProduct(urls,supplier_codes,supplier_names,product_infos):
          # op.add_argument('headless')
         op.add_argument('--headless')
         op.add_argument('--no-sandbox')
+        op.add_argument('----disable-gpu')
         op.add_argument('--disable-dev-shm-usage')
         driver = webdriver.Chrome(options=op)
         # driver = webdriver.Chrome(chrome_options=op)
