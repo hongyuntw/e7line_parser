@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[7]:
-
-
 from bs4 import BeautifulSoup
 import os
 import re
@@ -38,242 +32,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
 from collections import OrderedDict
-
-
-# In[8]:
-
-
-def save_obj(obj,path):
-    if not os.path.exists(os.path.dirname(path)):
-        try:
-            os.makedirs(os.path.dirname(path))
-        except OSError as exc: # Guard against race condition
-            if exc.errno != errno.EEXIST:
-                raise
-    with open(path, 'wb') as f:
-        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
-
 def load_obj(path):
     with open(path, 'rb') as f:
         return pickle.load(f)
-
-
-
-
-
-def getAllProducts(store_url):
-    ua = UserAgent()
-    headers = {
-        'User-Agent': 'Googlebot',
-    }
-    product_urls = []
-    for i in range(1,100):
-        base_page_url = '?apg='
-        page_url = base_page_url + str(i)
-        url = store_url + page_url
-        print(url)
-        res = requests.get(url,headers=headers,allow_redirects=False)
-        soup  = BeautifulSoup(res.text,'lxml')
-        products_nodes = soup.find('div',attrs={'class':'bd clearfix'}).find_all('li')
-        if (len(products_nodes) == 0):
-            return product_urls
-        for product_node in products_nodes:
-            product_url = product_node.find('a')['href']
-            product_urls.append(product_url)
-    return product_urls
-
-
-
-def parseYahooProduct(urls,supplier_codes,supplier_names,product_infos):
-    ua = UserAgent()
-    headers = {
-        'User-Agent': 'Googlebot',
-    }
-    product_dict = {}
-    product_name_dict = {}
-    product_supplier_name_dict = {}
-    product_info_dict = {}
-    for i in range(len(urls)):
-        while True:
-            try:
-                url = urls[i]
-                print(url)
-                supplier_code =  supplier_codes[i]
-                supplier_name = supplier_names[i]
-                product_info = product_infos[i]
-                product_key = url[url.rfind('/') + 1 :]
-                
-                
-                res = requests.get(url,headers=headers,allow_redirects=False)
-                soup  = BeautifulSoup(res.text,'lxml')
-                try:
-                    product_div = soup.find('section',attrs={"class":"wrap__3MZRM"})
-                    product_name = product_div.find('h1',attrs={'class':'title__3wBva'}).text
-                except:
-                    product_name = '商品名稱錯誤'
-                # print(product_name)
-                product_name_dict[product_key] = product_name
-                product_supplier_name_dict[product_key] = supplier_name
-                product_info_dict[product_key] = product_info
-                
-                
-                
-                original_price = ''
-                discount_price = ''
-                try:
-                    original_price_node = product_div.find('span',attrs={'class':'originPrice__271Nh'})
-                    original_price = int(re.findall('\d+', original_price_node.text.replace(',','') )[0])
-                except:
-                    pass
-                
-                try:
-                    discount_price_node = product_div.find('em',attrs={'class':'price__2f7Jw'})
-                    discount_price = int(re.findall('\d+', discount_price_node.text.replace(',','') )[0])
-                except:
-                    pass
-
-                try:
-                    spec_ul_node = product_div.find('ul',attrs={'class':'specList__3TA_I'})
-                    spec_divs = spec_ul_node.find_all('li',attrs={'class':None})
-                    spec_div_count = len(spec_divs)
-                except:
-                    break
-
-                # 沒有型別的
-                if(spec_div_count == 0):
-                    spec_dict = {}
-                    tmp_dict = {}
-                    spec_name = 'None'
-                    tmp_dict["discount_price"] = discount_price
-                    tmp_dict["original_price"] = original_price
-                    try:
-                        quantity_node = soup.find("input", attrs={'type':'number','class':'qtyInput__1dbgq'})
-                        tmp_dict["quantity"] = int(quantity_node.get('max').replace(',',''))
-                        if(tmp_dict['quantity']>5000):
-                            tmp_dict['quantity'] = '5000+'
-                    except:
-                        tmp_dict["quantity"] = ''
-                    spec_dict[spec_name] = tmp_dict
-                        
-                    product_dict[product_key] = spec_dict
-                else:
-                #     型別超過一種
-                    spec_ids_arr = []
-                    for spec_div in spec_divs:
-                        lis = spec_div.find('div',attrs={'class':'content__3X3yq'}).find('ul').find_all('li')
-                        spec_ids = []
-                        for li in lis:
-                            spec_id = li.find('input').attrs.get('id')
-                            spec_ids.append(spec_id)
-                        spec_ids_arr.append(spec_ids)
-                    op = webdriver.ChromeOptions()
-                    # op.add_argument('headless')
-                    op.add_argument('--headless')
-                    op.add_argument('--no-sandbox')
-                    op.add_argument('----disable-gpu')
-                    op.add_argument('--disable-dev-shm-usage')
-                    driver = webdriver.Chrome(options=op)
-                    # driver = webdriver.Chrome(chrome_options=op)
-
-                    driver.get(url)
-                    try:
-                        wait = ui.WebDriverWait(driver,5)
-                        wait.until(lambda driver: driver.find_element_by_class_name("specCheckbox__LtDOH"))
-                    except:
-                        break
-                    spec_arr = []
-                    spec_dict = {}
-                    for spec_id in spec_ids_arr[0]:
-                        tmp_dict = {}
-                        element = driver.find_element_by_id(spec_id)
-                        # print(spec_id)
-                        if(element.get_attribute('disabled') is None ):
-                            driver.execute_script("arguments[0].click();", element)
-                            html = driver.page_source
-                            soup = BeautifulSoup(html,'lxml')
-                            try:
-                                spec_node = soup.find('label',attrs={'for':spec_id})
-                            except:
-                                spec_name = 'None'
-
-                            try:
-                                # 圖片spec
-                                spec_name = spec_node.find('img', alt=True)['alt']
-                            except:
-                                # 普通spec
-                                spec_name = spec_node.text
-
-                            tmp_dict["discount_price"] = discount_price
-                            tmp_dict["original_price"] = original_price
-                            try:
-                                quantity_node = soup.find("input", attrs={'type':'number','class':'qtyInput__1dbgq'})
-                                tmp_dict["quantity"] = int(quantity_node.get('max').replace(',',''))
-                                if(tmp_dict['quantity']>5000):
-                                    tmp_dict['quantity'] = '5000+'
-                            except:
-                                tmp_dict["quantity"] = ''
-                            #print(tmp_dict)
-                            spec_dict[spec_name] = tmp_dict
-                        else:
-                            try:
-                                spec_node = soup.find('label',attrs={'for':spec_id})
-                            except:
-                                spec_name = 'None'
-                            try:
-                                # 圖片spec
-                                spec_name = spec_node.find('img', alt=True)['alt']
-                            except:
-                                # 普通spec
-                                spec_name = spec_node.text 
-                            tmp_dict["discount_price"] = ''
-                            tmp_dict["original_price"] = ''
-                            tmp_dict['quantity']= ''
-                            spec_dict[spec_name] = tmp_dict
-
-                            
-                    product_dict[product_key] = spec_dict
-                    
-                break
-            except Exception as e:
-                print(e)
-
-    driver.quit()
-    return product_dict, product_supplier_name_dict , product_info_dict , product_name_dict
-
-
-
-
-def processYahooData(data):
-    base_url  = data['url']
-    productDatas = data['productData']
-    product_urls = []
-    product_supplier_codes = []
-    product_supplier_names = []
-    product_infos = []
-    for productData in productDatas:
-        product_url = base_url.replace('productCode',productData['ProductCode']).replace('supplierCode',productData['SupplierCode'])
-        product_urls.append(product_url)
-        product_supplier_codes.append(productData['SupplierCode'])
-        
-        if(productData['SupplierName']): 
-            product_supplier_names.append(productData['SupplierName'])
-        else:
-            product_supplier_names.append('yahoo')
-        product_infos.append('\n'.join(productData['ProductInfo']))
-    product_dict, product_supplier_name_dict , product_info_dict , product_name_dict = parseYahooProduct(product_urls,
-                                                                                   product_supplier_codes,
-                                                                                   product_supplier_names,
-                                                                                   product_infos)
-    today = datetime.now().strftime("%m_%d_%Y")
-    save_obj(product_dict, './yahoo/' + today + '/product_dict.pkl')
-    save_obj(product_supplier_name_dict, './yahoo/' + today + '/product_supplier_name_dict.pkl')
-    save_obj(product_info_dict, './yahoo/' + today + '/product_info_dict.pkl')
-    save_obj(product_name_dict, './yahoo/' + today + '/product_name_dict.pkl')
-
-
-    return product_dict, product_supplier_name_dict , product_info_dict , product_name_dict
-    
-
 
 
 def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , product_name_dict):
@@ -310,7 +71,9 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
     workbook  = Workbook()
     workbook_changed = Workbook()
     
-    for product_key , specs in product_dict.items():
+    for product_key, specs in product_dict.items():
+        # if product_key == '100738571990':
+        #     print(123)
         product_id = product_key
         store_name = product_supplier_name_dict[product_key]
         sheet_name = store_name
@@ -386,6 +149,7 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
                         be_copy_cell_rows[sheet_name].append(row)
                         for i in range(1,8):
                             sheet.cell(row=row, column=i).fill = fill_gray
+
                 except:
                    # spec_add += 1
                     need_to_copy = True
@@ -570,78 +334,12 @@ def dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , pro
     text += '\n綠色代表新增，灰色代表移除，紅色代表變更！'
     
     return fileNames, text
+
+
+today = datetime.now().strftime("%m_%d_%Y")
+product_dict = load_obj('./yahoo/' + today + '/product_dict.pkl')
+product_supplier_name_dict = load_obj('./yahoo/' + today + '/product_supplier_name_dict.pkl')
+product_info_dict = load_obj('./yahoo/' + today + '/product_info_dict.pkl')
+product_name_dict = load_obj('./yahoo/' + today + '/product_name_dict.pkl')
+dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , product_name_dict)
     
-def send_mail(send_from, send_to, subject, text, files=None,server="127.0.0.1"):
-    assert isinstance(send_to, list)
-    msg = MIMEMultipart()
-    msg['From'] = send_from
-    msg['To'] = COMMASPACE.join(send_to)
-    msg['Date'] = formatdate(localtime=True)
-    msg['Subject'] = subject
-
-    msg.attach(MIMEText(text))
-    
-    if files is not None:
-        for file in files:
-            with open(file, "rb") as fil:
-                part = MIMEApplication(
-                    fil.read(),
-                    Name=basename(file)
-                )
-                # After the file is closed
-                part['Content-Disposition'] = 'attachment; filename="%s"' % basename(file)
-                msg.attach(part)
-    smtp = smtplib.SMTP('10.210.1.221')
-    smtp.sendmail(send_from, send_to, msg.as_string())
-    smtp.close()
-
-
-
-
-subject = 'Yahoo商品爬蟲'
-send_to = ['ruby.lin@e7line.com',
-           'xing.chen@gigabyte.com',
-           'chaoyang.huang@gigabyte.com',
-	   'harrychiang0@gmail.com',
-	   'carina.wang@e7line.com',
-	   'kelsey.chang@e7line.com',
-	   'vivian.hung@e7line.com']
-
-#send_to = ['harrychiang0@gmail.com']
-
-test_api = 'https://www.e7line.com:8080/spiderdata3.aspx'
-api = 'https://www.e7line.com/spiderdata3.aspx'
-with urllib.request.urlopen(api) as url:
-    datas = json.loads(url.read().decode())
-    
-try:
-    yahoo_data = datas[1]
-    # print(yahoo_data)
-    # yahoo_data = {
-    #     'url': 'https://tw.bid.yahoo.com/item/productCode' ,
-    #     'productData': [{
-    #         'SupplierName': '麥卡樂',
-    #         'SupplierCode': '',
-    #         'ProductCode': '100482766988',
-    #         'ProductInfo': ['P1907170028---鐵藝隔板置物架(小號) A051---已停用'],
-    #     }],
-    # }
-except:
-    text = '今天yahoo商品沒有資訊！'
-    send_mail('e7line@gigabyte.com', send_to , subject, text , files=None,server="127.0.0.1")
-
-    print('cant get yahoo data')
-    raise SystemExit("stop program")
-
-product_dict, product_supplier_name_dict , product_info_dict , product_name_dict = processYahooData(yahoo_data)
-fileNames , text = dumpExcel(product_dict, product_supplier_name_dict , product_info_dict , product_name_dict)
-
-    
-# send_to = ['harrychiang0@gmail.com']
-send_mail('e7line@gigabyte.com', send_to , subject, text , files=fileNames,server="127.0.0.1")
-
-
-
-
-
-
